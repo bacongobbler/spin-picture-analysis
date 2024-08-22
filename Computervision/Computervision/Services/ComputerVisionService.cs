@@ -1,18 +1,18 @@
 
-using ComputerVision.Daos;
+using Computervision.Daos;
 using Dapr.Client;
 
-using ComputerVision.Models;
+using Computervision.Models;
 
-namespace ComputerVision.Services;
+namespace Computervision.Services;
 
-public class ComputerVisionService : IComputerVisionService
+public class ComputervisionService : IComputervisionService
 {
     private readonly IFileDao _fileDao;
     private readonly IAnalysisService _analysisService;
     private readonly DaprClient _daprClient;
 
-    public ComputerVisionService(IFileDao fileDao, IAnalysisService analysisService, DaprClient daprClient)
+    public ComputervisionService(IFileDao fileDao, IAnalysisService analysisService, DaprClient daprClient)
     {
         _fileDao = fileDao;
         _analysisService = analysisService;

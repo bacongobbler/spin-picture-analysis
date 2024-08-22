@@ -10,11 +10,11 @@ route = "/..."
 component = "computervision"
 
 [component.computervision]
-source = "build/ComputerVision.wasm"
+source = "build/Computervision.wasm"
 # NOTE: this is necessary to appease the ASP.NET Core gods, or else they'll get angry that there's no root filesystem
 files = [{ source = "static", destination = "/" }]
 # allow connections to dapr
 allowed_outbound_hosts = ["http://127.0.0.1:3500"]
 
 [component.computervision.build]
-command = "ASPNETCORE_WASI_PATH=$(pwd)/aspnetcore-wasi NUGET_LOCAL_PATH=$(pwd)/packages dotnet publish -o build src/ComputerVision/ComputerVision.csproj"
+command = "ASPNETCORE_WASI_PATH=$(pwd)/../aspnetcore-wasi NUGET_LOCAL_PATH=$(pwd)/../packages dotnet publish -o build Computervision/Computervision.csproj"

@@ -1,4 +1,4 @@
-namespace ComputerVision.Daos;
+namespace Computervision.Daos;
 
 public interface IFileDao
 {

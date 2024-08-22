@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 using Dapr.Client;
 using SpinHttpWorld.wit.exports.wasi.http.v0_2_0;
 
-namespace ComputerVision.Daos;
+namespace Computervision.Daos;
 
 public class FileDao : IFileDao
 {

@@ -1,6 +1,6 @@
-using ComputerVision.Daos;
-using ComputerVision.Models;
-using ComputerVision.Services;
+using Computervision.Daos;
+using Computervision.Models;
+using Computervision.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
@@ -53,7 +53,7 @@ public class IncomingHandlerImpl : IIncomingHandler
         builder.Services.AddHttpClient();
         builder.Services.AddDaprClient();
         builder.Services.AddTransient<IFileDao, FileDao>();
-        builder.Services.AddTransient<IComputerVisionService, ComputerVisionService>();
+        builder.Services.AddTransient<IComputervisionService, ComputervisionService>();
         builder.Services.AddTransient<IAnalysisService, AnalysisService>();
 
         var app = builder.Build();
@@ -64,12 +64,12 @@ public class IncomingHandlerImpl : IIncomingHandler
 
         app.UseCloudEvents();
 
-        app.MapPost("/api/v1.0/computervision", async context =>
+        app.MapPost("/api/v1.0/Computervision", async context =>
         {
-            var computerVisionService = context.RequestServices.GetRequiredService<IComputerVisionService>();
+            var ComputervisionService = context.RequestServices.GetRequiredService<IComputervisionService>();
             var fileReference = "foo";
             app.Logger.LogInformation("processing image {FileReference}", fileReference);
-            await computerVisionService.ProcessImage(fileReference);
+            await ComputervisionService.ProcessImage(fileReference);
             app.Logger.LogInformation("processed image {FileReference}", fileReference);
             context.Response.StatusCode = StatusCodes.Status204NoContent;
         });

@@ -1,6 +1,6 @@
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 
-namespace ComputerVision.Services;
+namespace Computervision.Services;
 
 public interface IAnalysisService
 {

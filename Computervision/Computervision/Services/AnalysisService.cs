@@ -3,7 +3,7 @@ using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 using Microsoft.Extensions.Configuration;
 
-namespace ComputerVision.Services;
+namespace Computervision.Services;
 
 public class AnalysisService : IAnalysisService
 {

@@ -31,7 +31,7 @@
     <PackageReference Include="Dapr.AspNetCore" Version="1.14.0" />
     <PackageReference Include="Fermyon.Spin.SDK" Version="0.1.0-dev" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.0-preview.7.24406.2" />
-    <PackageReference Include="Microsoft.Azure.CognitiveServices.Vision.ComputerVision" Version="7.0.1" />
+    <PackageReference Include="Microsoft.Azure.CognitiveServices.Vision.Computervision" Version="7.0.1" />
     <PackageReference Include="Microsoft.DotNet.ILCompiler.LLVM" Version="9.0.0-dev" />
     <PackageReference Include="runtime.$(_hostOS)-$(_hostArch).Microsoft.DotNet.ILCompiler.LLVM" Version="9.0.0-dev" />
   </ItemGroup>
