@@ -2,6 +2,7 @@ version: 1
 apps:
   - appID: computer-vision
     appDirPath: ./Computervision/
+    resourcesPaths: ["./components/"]
     appPort: 9000
     # NOTE: if you're modifying this, make sure to change it in Program.cs as well as spin.toml's allowed_outbound_hosts
     daprHTTPPort: 3500
@@ -10,6 +11,7 @@ apps:
     command: ["spin", "up", "--build", "--listen=127.0.0.1:9000"]
   - appID: file-service
     appDirPath: ./FileService/
+    resourcesPaths: ["./components/"]
     appPort: 9001
     daprHTTPPort: 3501
     daprGRPCPort: 53501

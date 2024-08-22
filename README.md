@@ -2,7 +2,7 @@
 
 Example repository to recognize a picture and send a notification.
 
-# Building
+## Building
 
 ```console
 export PLATFORM=linux-x64
@@ -19,6 +19,6 @@ dapr run -f .
 
 Once all of your services are running, run:
 
-```
-curl -XPOST localhost:9000/api/v1.0/computervision
+```console
+curl -XPOST localhost:9000/api/v1.0/computervision -H 'Content-Type: application/json' --data '{"fileReference": "foo"}' -i
 ```
