@@ -14,5 +14,11 @@ curl -LO --output-dir packages https://github.com/dicej/spin-dotnet-sdk/releases
 curl -LO https://github.com/dicej/spin-dotnet-sdk/releases/download/canary/aspnetcore-wasi.zip
 unzip aspnetcore-wasi.zip
 rm aspnetcore-wasi.zip
-spin up --build
+dapr run -f .
+```
+
+Once all of your services are running, run:
+
+```
+curl -XPOST localhost:9000/api/v1.0/computervision
 ```

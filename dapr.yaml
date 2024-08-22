@@ -1,0 +1,17 @@
+version: 1
+apps:
+  - appID: computer-vision
+    appDirPath: ./Computervision/
+    appPort: 9000
+    # NOTE: if you're modifying this, make sure to change it in Program.cs as well as spin.toml's allowed_outbound_hosts
+    daprHTTPPort: 3500
+    daprGRPCPort: 53500
+    appHealthCheckPath: "/healthz"
+    command: ["spin", "up", "--build", "--listen=127.0.0.1:9000"]
+  - appID: file-service
+    appDirPath: ./FileService/
+    appPort: 9001
+    daprHTTPPort: 3501
+    daprGRPCPort: 53501
+    appHealthCheckPath: "/healthz"
+    command: ["spin", "up", "--build", "--listen=127.0.0.1:9001"]

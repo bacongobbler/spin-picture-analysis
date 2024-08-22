@@ -1,0 +1,20 @@
+spin_manifest_version = 2
+
+[application]
+name = "hello"
+version = "0.1.0"
+authors = ["Fermyon Engineering <engineering@fermyon.com>"]
+
+[[trigger.http]]
+route = "/..."
+component = "fileservice"
+
+[component.fileservice]
+source = "build/FileService.wasm"
+# NOTE: this is necessary to appease the ASP.NET Core gods, or else they'll get angry that there's no root filesystem
+files = [{ source = "static", destination = "/" }]
+# allow connections to dapr
+allowed_outbound_hosts = ["http://127.0.0.1:3500"]
+
+[component.fileservice.build]
+command = "ASPNETCORE_WASI_PATH=$(pwd)/../aspnetcore-wasi NUGET_LOCAL_PATH=$(pwd)/../packages dotnet publish -o build FileService/FileService.csproj"

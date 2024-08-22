@@ -1,7 +1,5 @@
-using Computervision.Daos;
-using Computervision.Models;
-using Computervision.Services;
-using Dapr;
+using FileService.Models;
+using FileService.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
@@ -39,7 +37,6 @@ public class IncomingHandlerImpl : IIncomingHandler
         builder.Logging
             .AddProvider(new WasiLoggingProvider());
 
-
         // Add assistive services - not business critical
         builder.Services.AddHealthChecks();
         builder.Services.AddOpenApi();
@@ -62,11 +59,9 @@ public class IncomingHandlerImpl : IIncomingHandler
 
             // We need to tell dapr what endpoint the sidecar is listening on because we cannot read environment variables like $DAPR_HTTP_ENDPOINT.
             // https://docs.dapr.io/developing-applications/sdks/dotnet/dotnet-client/dotnet-daprclient-usage/
-            options.UseHttpEndpoint("http://127.0.0.1:3500");
+            options.UseHttpEndpoint("http://127.0.0.1:3501");
         });
-        builder.Services.AddTransient<IFileDao, FileDao>();
-        builder.Services.AddTransient<IComputervisionService, ComputervisionService>();
-        builder.Services.AddTransient<IAnalysisService, AnalysisService>();
+        builder.Services.AddTransient<IFileService, FileService.Services.FileService>();
 
         var app = builder.Build();
 
@@ -76,31 +71,25 @@ public class IncomingHandlerImpl : IIncomingHandler
 
         app.UseCloudEvents();
 
-        app.MapPost("/api/v1.0/Computervision", async context =>
+        app.MapGet("/api/v1.0/File/{fileName}", async context =>
         {
-            var ComputervisionService = context.RequestServices.GetRequiredService<IComputervisionService>();
-            if (!context.Request.HasJsonContentType())
-            {
-                context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
-                return;
-            }
-            if (context.Request.ContentLength == 0)
-            {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                return;
-            }
-            var message = await context.Request.ReadFromJsonAsync<Message>();
-            if (message is null || string.IsNullOrEmpty(message.FileReference))
-            {
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                return;
-            }
-            app.Logger.LogInformation("processing image {FileReference}", message.FileReference);
-            await ComputervisionService.ProcessImage(message.FileReference);
-            app.Logger.LogInformation("processed image {FileReference}", message.FileReference);
-            context.Response.StatusCode = StatusCodes.Status204NoContent;
-        })
-        .WithTopic("messagebus", "message-received");
+            var fileName = context.Request.RouteValues["fileName"] as string;
+            app.Logger.LogInformation("fetching file {Filename}", fileName);
+            var fileService = context.RequestServices.GetRequiredService<IFileService>();
+            var fileRequest = await fileService.Get(fileName!);
+            app.Logger.LogInformation("fetched file {Filename}", fileName);
+            await context.Response.WriteAsJsonAsync(fileRequest);
+        });
+
+        // app.MapPost("/api/v1.0/File", async context =>
+        // {
+        //     var fileService = context.RequestServices.GetRequiredService<IFileService>();
+        //     var fileReference = "foo";
+        //     app.Logger.LogInformation("processing image {FileReference}", fileReference);
+        //     await ComputervisionService.ProcessImage(fileReference);
+        //     app.Logger.LogInformation("processed image {FileReference}", fileReference);
+        //     context.Response.StatusCode = StatusCodes.Status204NoContent;
+        // });
 
         Func<Task> task = async () =>
         {
@@ -113,6 +102,5 @@ public class IncomingHandlerImpl : IIncomingHandler
 }
 
 [JsonSerializable(typeof(FileResponse[]))]
-[JsonSerializable(typeof(Message[]))]
-[JsonSerializable(typeof(NotificationMessage[]))]
+[JsonSerializable(typeof(FileRequest[]))]
 public partial class AppJsonSerializerContext : JsonSerializerContext {}

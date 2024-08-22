@@ -25,26 +25,18 @@ public class FileDao : IFileDao
             $"api/v1.0/File/{fileReference}"
         );
 
-        try
+        var response = await _daprClient.InvokeMethodWithResponseAsync(request);
+        if (!response.IsSuccessStatusCode)
         {
-            var response = await _daprClient.InvokeMethodWithResponseAsync(request);
-            if (!response.IsSuccessStatusCode)
-            {
-                throw new Exception();
-            }
-
-            var fileResponse = JsonSerializer.Deserialize(await response.Content.ReadAsStringAsync(), AppJsonSerializerContext.Default.FileResponse);
-            if (fileResponse is null)
-            {
-                throw new Exception();
-            }
-
-            return fileResponse.base64;
+            throw new Exception();
         }
-        catch (Exception e)
+
+        var fileResponse = JsonSerializer.Deserialize(await response.Content.ReadAsStringAsync(), AppJsonSerializerContext.Default.FileResponse);
+        if (fileResponse is null)
         {
-            _logger.LogError(e, "Error while fetching picture {fileReference}", fileReference);
-            throw;
+            throw new Exception();
         }
+
+        return fileResponse.base64;
     }
 }
