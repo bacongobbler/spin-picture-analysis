@@ -1,4 +1,5 @@
 using ComputerVision.Daos;
+using ComputerVision.Models;
 using ComputerVision.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -83,7 +84,7 @@ public class IncomingHandlerImpl : IIncomingHandler
     }
 }
 
-public record Message(string FileReference);
-
+[JsonSerializable(typeof(FileResponse[]))]
 [JsonSerializable(typeof(Message[]))]
+[JsonSerializable(typeof(NotificationMessage[]))]
 public partial class AppJsonSerializerContext : JsonSerializerContext {}

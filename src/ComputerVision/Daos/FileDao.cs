@@ -1,16 +1,18 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using Dapr.Client;
-
-using ComputerVision.Models;
+using SpinHttpWorld.wit.exports.wasi.http.v0_2_0;
 
 namespace ComputerVision.Daos;
 
 public class FileDao : IFileDao
 {
+    private readonly ILogger<FileDao> _logger;
     private readonly DaprClient _daprClient;
 
-    public FileDao(DaprClient daprClient)
+    public FileDao(ILogger<FileDao> logger, DaprClient daprClient)
     {
+        _logger = logger;
         _daprClient = daprClient;
     }
 
@@ -23,19 +25,26 @@ public class FileDao : IFileDao
             $"api/v1.0/File/{fileReference}"
         );
 
-        var response = await _daprClient.InvokeMethodWithResponseAsync(request);
-
-        if (!response.IsSuccessStatusCode)
+        try
         {
-            throw new Exception();
-        }
-        var fileResponse = JsonSerializer.Deserialize<FileResponse>(await response.Content.ReadAsStringAsync());
+            var response = await _daprClient.InvokeMethodWithResponseAsync(request);
+            if (!response.IsSuccessStatusCode)
+            {
+                throw new Exception();
+            }
 
-        if (fileResponse is null)
+            var fileResponse = JsonSerializer.Deserialize(await response.Content.ReadAsStringAsync(), AppJsonSerializerContext.Default.FileResponse);
+            if (fileResponse is null)
+            {
+                throw new Exception();
+            }
+
+            return fileResponse.base64;
+        }
+        catch (Exception e)
         {
-            throw new Exception();
+            _logger.LogError(e, "Error while fetching picture {fileReference}", fileReference);
+            throw;
         }
-
-        return fileResponse.base64;
     }
 }
