@@ -1,4 +1,4 @@
-# fermyon-picture-analysis
+# spin-picture-analysis
 
 Example repository to recognize a picture and send a notification.
 
