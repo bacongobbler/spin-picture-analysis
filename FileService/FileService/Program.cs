@@ -60,6 +60,16 @@ public class IncomingHandlerImpl : IIncomingHandler
             // We need to tell dapr what endpoint the sidecar is listening on because we cannot read environment variables like $DAPR_HTTP_ENDPOINT.
             // https://docs.dapr.io/developing-applications/sdks/dotnet/dotnet-client/dotnet-daprclient-usage/
             options.UseHttpEndpoint("http://127.0.0.1:3501");
+
+            // force the runtime to use the HTTP client handler
+            // NOTE: this could be removed once SocketsHttpHandler.IsSupported is set to false for WASI
+            // https://learn.microsoft.com/en-us/dotnet/api/system.net.http.socketshttphandler?view=net-8.0
+            // var grpcOptions = new Grpc.Net.Client.GrpcChannelOptions
+            // {
+            //     HttpHandler = new HttpClientHandler()
+            // };
+
+            // options.UseGrpcChannelOptions(grpcOptions);
         });
         builder.Services.AddTransient<IFileService, FileService.Services.FileService>();
 
@@ -73,23 +83,44 @@ public class IncomingHandlerImpl : IIncomingHandler
 
         app.MapGet("/api/v1.0/File/{fileName}", async context =>
         {
+            app.Logger.LogInformation("fetching file service");
+            var fileService = context.RequestServices.GetRequiredService<IFileService>();
+            app.Logger.LogInformation("fetched file service");
             var fileName = context.Request.RouteValues["fileName"] as string;
             app.Logger.LogInformation("fetching file {Filename}", fileName);
-            var fileService = context.RequestServices.GetRequiredService<IFileService>();
             var fileRequest = await fileService.Get(fileName!);
             app.Logger.LogInformation("fetched file {Filename}", fileName);
             await context.Response.WriteAsJsonAsync(fileRequest);
         });
 
-        // app.MapPost("/api/v1.0/File", async context =>
-        // {
-        //     var fileService = context.RequestServices.GetRequiredService<IFileService>();
-        //     var fileReference = "foo";
-        //     app.Logger.LogInformation("processing image {FileReference}", fileReference);
-        //     await ComputervisionService.ProcessImage(fileReference);
-        //     app.Logger.LogInformation("processed image {FileReference}", fileReference);
-        //     context.Response.StatusCode = StatusCodes.Status204NoContent;
-        // });
+        app.MapPost("/api/v1.0/File", async context =>
+        {
+            app.Logger.LogInformation("fetching file service");
+            var fileService = context.RequestServices.GetRequiredService<IFileService>();
+            app.Logger.LogInformation("fetched file service");
+
+            if (!context.Request.HasJsonContentType())
+            {
+                context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
+                return;
+            }
+            if (context.Request.ContentLength == 0)
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+
+            var fileRequest = await context.Request.ReadFromJsonAsync<FileRequest>();
+            if (fileRequest is null || string.IsNullOrEmpty(fileRequest.Base64))
+            {
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                return;
+            }
+            app.Logger.LogInformation("saving file {FileRequest}", fileRequest);
+            await fileService.Save(fileRequest);
+            app.Logger.LogInformation("saved file {FileRequest}", fileRequest);
+            context.Response.StatusCode = StatusCodes.Status204NoContent;
+        });
 
         Func<Task> task = async () =>
         {

@@ -1,7 +1,6 @@
 using Computervision.Daos;
 using Computervision.Models;
 using Computervision.Services;
-using Dapr;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Http;
@@ -63,6 +62,16 @@ public class IncomingHandlerImpl : IIncomingHandler
             // We need to tell dapr what endpoint the sidecar is listening on because we cannot read environment variables like $DAPR_HTTP_ENDPOINT.
             // https://docs.dapr.io/developing-applications/sdks/dotnet/dotnet-client/dotnet-daprclient-usage/
             options.UseHttpEndpoint("http://127.0.0.1:3500");
+
+            // force the runtime to use the HTTP client handler
+            // NOTE: this could be removed once SocketsHttpHandler.IsSupported is set to false for WASI
+            // https://learn.microsoft.com/en-us/dotnet/api/system.net.http.socketshttphandler?view=net-8.0
+            // var grpcOptions = new Grpc.Net.Client.GrpcChannelOptions
+            // {
+            //     HttpHandler = new HttpClientHandler()
+            // };
+
+            // options.UseGrpcChannelOptions(grpcOptions);
         });
         builder.Services.AddTransient<IFileDao, FileDao>();
         builder.Services.AddTransient<IComputervisionService, ComputervisionService>();
@@ -78,7 +87,13 @@ public class IncomingHandlerImpl : IIncomingHandler
 
         app.MapPost("/api/v1.0/Computervision", async context =>
         {
-            var ComputervisionService = context.RequestServices.GetRequiredService<IComputervisionService>();
+            var computervisionService = context.RequestServices.GetRequiredService<IComputervisionService>();
+            if (computervisionService is null)
+            {
+                app.Logger.LogWarning("computer vision service is unavailable");
+                context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
+                return;
+            }
             if (!context.Request.HasJsonContentType())
             {
                 context.Response.StatusCode = StatusCodes.Status405MethodNotAllowed;
@@ -96,7 +111,7 @@ public class IncomingHandlerImpl : IIncomingHandler
                 return;
             }
             app.Logger.LogInformation("processing image {FileReference}", message.FileReference);
-            await ComputervisionService.ProcessImage(message.FileReference);
+            await computervisionService.ProcessImage(message.FileReference);
             app.Logger.LogInformation("processed image {FileReference}", message.FileReference);
             context.Response.StatusCode = StatusCodes.Status204NoContent;
         })
