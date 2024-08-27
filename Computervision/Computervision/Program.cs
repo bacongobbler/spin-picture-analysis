@@ -64,14 +64,12 @@ public class IncomingHandlerImpl : IIncomingHandler
             options.UseHttpEndpoint("http://127.0.0.1:3500");
 
             // force the runtime to use the HTTP client handler
-            // NOTE: this could be removed once SocketsHttpHandler.IsSupported is set to false for WASI
-            // https://learn.microsoft.com/en-us/dotnet/api/system.net.http.socketshttphandler?view=net-8.0
-            // var grpcOptions = new Grpc.Net.Client.GrpcChannelOptions
-            // {
-            //     HttpHandler = new HttpClientHandler()
-            // };
+            var grpcOptions = new Grpc.Net.Client.GrpcChannelOptions
+            {
+                HttpHandler = new HttpClientHandler()
+            };
 
-            // options.UseGrpcChannelOptions(grpcOptions);
+            options.UseGrpcChannelOptions(grpcOptions);
         });
         builder.Services.AddTransient<IFileDao, FileDao>();
         builder.Services.AddTransient<IComputervisionService, ComputervisionService>();
