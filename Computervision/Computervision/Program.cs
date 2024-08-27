@@ -62,6 +62,7 @@ public class IncomingHandlerImpl : IIncomingHandler
             // We need to tell dapr what endpoint the sidecar is listening on because we cannot read environment variables like $DAPR_HTTP_ENDPOINT.
             // https://docs.dapr.io/developing-applications/sdks/dotnet/dotnet-client/dotnet-daprclient-usage/
             options.UseHttpEndpoint("http://127.0.0.1:3500");
+            options.UseGrpcEndpoint("http://127.0.0.1:53500");
 
             // force the runtime to use the HTTP client handler
             var grpcOptions = new Grpc.Net.Client.GrpcChannelOptions
