@@ -8,8 +8,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Spin.Http;
-using SpinHttpWorld.wit.imports.wasi.http.v0_2_0;
+using System.Text.Encodings.Web;
+using System.Text.Json;
 using System.Text.Json.Serialization;
+using SpinHttpWorld.wit.imports.wasi.http.v0_2_0;
 
 namespace SpinHttpWorld.wit.exports.wasi.http.v0_2_0;
 
@@ -92,7 +94,14 @@ public class IncomingHandlerImpl : IIncomingHandler
             app.Logger.LogInformation("fetching file {Filename}", fileName);
             var fileRequest = await fileService.Get(fileName!);
             app.Logger.LogInformation("fetched file {Filename}", fileName);
-            await context.Response.WriteAsJsonAsync(fileRequest, AppJsonSerializerContext.Default.FileRequest);
+            // NOTE(bacongobbler): necessary to unescape certain characters
+            // https://learn.microsoft.com/en-us/dotnet/standard/serialization/system-text-json/migrate-from-newtonsoft?pivots=dotnet-9-0#minimal-character-escaping
+            var jsonSerializerOptions = new JsonSerializerOptions
+            {
+                TypeInfoResolver = AppJsonSerializerContext.Default,
+                Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+            };
+            await context.Response.WriteAsJsonAsync(fileRequest, jsonSerializerOptions);
         });
 
         app.MapPost("/api/v1.0/File", async context =>

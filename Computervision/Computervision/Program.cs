@@ -50,6 +50,16 @@ public class IncomingHandlerImpl : IIncomingHandler
         });
 
         // Add Core business services
+
+        builder.Services.AddHttpClient("dapr", options =>
+        {
+            options.BaseAddress = new Uri("http://127.0.0.1:3500");
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            // downgrade to the default HttpClientHandler used in .NET Core 2.0 and earlier.
+            return new HttpClientHandler();
+        });
+
         builder.Services.AddHttpClient();
         builder.Services.AddDaprClient(options =>
         {
@@ -129,4 +139,5 @@ public class IncomingHandlerImpl : IIncomingHandler
 [JsonSerializable(typeof(FileResponse[]))]
 [JsonSerializable(typeof(Message[]))]
 [JsonSerializable(typeof(NotificationMessage[]))]
+[JsonSerializable(typeof(Dictionary<string, string>[]))]
 public partial class AppJsonSerializerContext : JsonSerializerContext {}
