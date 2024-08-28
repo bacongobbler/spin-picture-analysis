@@ -1,3 +1,4 @@
+using Dapr.Client;
 using FileService.Models;
 using FileService.Services;
 using Microsoft.AspNetCore.Builder;
@@ -8,15 +9,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Spin.Http;
 using SpinHttpWorld.wit.imports.wasi.http.v0_2_0;
-using System.Diagnostics.CodeAnalysis;
-using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace SpinHttpWorld.wit.exports.wasi.http.v0_2_0;
 
 public class IncomingHandlerImpl : IIncomingHandler
 {
-    [RequiresUnreferencedCode("WASI")]
     public static void Handle(ITypes.IncomingRequest request, ITypes.ResponseOutparam response)
     {
         var builder = WebApplication.CreateSlimBuilder([]);
@@ -48,28 +46,33 @@ public class IncomingHandlerImpl : IIncomingHandler
         });
 
         // Add Core business services
-        builder.Services.AddHttpClient();
-        builder.Services.AddDaprClient(options =>
+
+        // HACK(bacongobbler): use HttpClient to call output bindings.
+        // TODO: remove and use DaprClient once System.Net.Sockets support is available so we can use the default SocketsHttpHandler
+        builder.Services.AddHttpClient("dapr", options =>
         {
-            // https://github.com/dapr/dotnet-sdk/issues/1097#issuecomment-1960876594
-            var op = new JsonSerializerOptions();
-            op.TypeInfoResolverChain.Clear();
-            op.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
-            options.UseJsonSerializationOptions(op);
-
-            // We need to tell dapr what endpoint the sidecar is listening on because we cannot read environment variables like $DAPR_HTTP_ENDPOINT.
-            // https://docs.dapr.io/developing-applications/sdks/dotnet/dotnet-client/dotnet-daprclient-usage/
-            options.UseHttpEndpoint("http://127.0.0.1:3501");
-            options.UseGrpcEndpoint("http://127.0.0.1:53501");
-
-            // force the runtime to use the HTTP client handler
-            var grpcOptions = new Grpc.Net.Client.GrpcChannelOptions
-            {
-                HttpHandler = new HttpClientHandler()
-            };
-
-            options.UseGrpcChannelOptions(grpcOptions);
+            options.BaseAddress = new Uri("http://127.0.0.1:3501");
+        }).ConfigurePrimaryHttpMessageHandler(() =>
+        {
+            // downgrade to the default HttpClientHandler used in .NET Core 2.0 and earlier.
+            return new HttpClientHandler();
         });
+
+        // builder.Services.AddHttpClient();
+        // builder.Services.AddDaprClient(options =>
+        // {
+        //     // https://github.com/dapr/dotnet-sdk/issues/1097#issuecomment-1960876594
+        //     var op = new JsonSerializerOptions();
+        //     op.TypeInfoResolverChain.Clear();
+        //     op.TypeInfoResolverChain.Insert(0, AppJsonSerializerContext.Default);
+        //     options.UseJsonSerializationOptions(op);
+
+        //     // We need to tell dapr what endpoint the sidecar is listening on because we cannot read environment variables like $DAPR_HTTP_ENDPOINT.
+        //     // https://docs.dapr.io/developing-applications/sdks/dotnet/dotnet-client/dotnet-daprclient-usage/
+        //     options.UseHttpEndpoint("http://127.0.0.1:3501");
+        //     options.UseGrpcEndpoint("http://127.0.0.1:53501");
+        // });
+
         builder.Services.AddTransient<IFileService, FileService.Services.FileService>();
 
         var app = builder.Build();
@@ -89,7 +92,7 @@ public class IncomingHandlerImpl : IIncomingHandler
             app.Logger.LogInformation("fetching file {Filename}", fileName);
             var fileRequest = await fileService.Get(fileName!);
             app.Logger.LogInformation("fetched file {Filename}", fileName);
-            await context.Response.WriteAsJsonAsync(fileRequest);
+            await context.Response.WriteAsJsonAsync(fileRequest, AppJsonSerializerContext.Default.FileRequest);
         });
 
         app.MapPost("/api/v1.0/File", async context =>
@@ -131,6 +134,9 @@ public class IncomingHandlerImpl : IIncomingHandler
     }
 }
 
+// NOTE(bacongobbler): Binding* can be removed once we're using DaprClient instead of HttpClient to invoke output bindings
+[JsonSerializable(typeof(BindingRequest[]))]
+[JsonSerializable(typeof(BindingResponse[]))]
 [JsonSerializable(typeof(FileResponse[]))]
 [JsonSerializable(typeof(FileRequest[]))]
 public partial class AppJsonSerializerContext : JsonSerializerContext {}

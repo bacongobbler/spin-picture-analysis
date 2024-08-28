@@ -28,3 +28,10 @@ Or:
 ```
 curl localhost:9001/api/v1.0/File/hello.txt
 ```
+
+## Notable changes
+
+Dapr's `InvokeBindingAsync` uses the gRPC protocol to invoke output bindings. Due to the lack of
+HTTP/2 or `System.Net.Sockets` support, we cannot use this protocol at this time. Fortunately, dapr
+[exposes output bindings via the HTTP
+API](https://docs.dapr.io/developing-applications/building-blocks/bindings/howto-bindings/).
