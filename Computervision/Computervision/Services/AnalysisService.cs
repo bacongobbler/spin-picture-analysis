@@ -1,20 +1,19 @@
-using System.Net.Http.Json;
+using Dapr.Client;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision;
 using Microsoft.Azure.CognitiveServices.Vision.ComputerVision.Models;
 using Microsoft.Extensions.Logging;
-using SpinHttpWorld.wit.exports.wasi.http.v0_2_0;
 
 namespace Computervision.Services;
 
 public class AnalysisService : IAnalysisService
 {
     private readonly ILogger<AnalysisService> _logger;
-    private readonly IHttpClientFactory _httpClientFactory;
+    private readonly DaprClient _daprClient;
 
-    public AnalysisService(ILogger<AnalysisService> logger, IHttpClientFactory httpClientFactory)
+    public AnalysisService(ILogger<AnalysisService> logger, DaprClient daprClient)
     {
         _logger = logger;
-        _httpClientFactory = httpClientFactory;
+        _daprClient = daprClient;
     }
 
     public async Task<List<Category>> AnalyzeImage(string base64)
@@ -43,21 +42,7 @@ public class AnalysisService : IAnalysisService
 
     private async Task<string> GetSecret(string store, string key)
     {
-        var httpClient = _httpClientFactory.CreateClient("dapr");
-        var response = await httpClient.GetAsync($"/v1.0/secrets/{store}/{key}");
-        if (!response.IsSuccessStatusCode)
-        {
-            _logger.LogWarning("received unsuccessful response from dapr sidecar: {ResponseCode} {ResponseContent}", response.StatusCode, await response.Content.ReadAsStringAsync());
-            throw new Exception("failed to analyze image");
-        }
-
-        var dict = await response.Content.ReadFromJsonAsync(AppJsonSerializerContext.Default.DictionaryStringString);
-        if (dict is null)
-        {
-            _logger.LogWarning("could not parse response as secret: {ResponseCode} {ResponseContent}", response.StatusCode, await response.Content.ReadAsStringAsync());
-            throw new Exception("failed to analyze image");
-        }
-
-        return dict.First().Value;
+        var secret = await _daprClient.GetSecretAsync(store, key);
+        return secret.First().Value;
     }
 }

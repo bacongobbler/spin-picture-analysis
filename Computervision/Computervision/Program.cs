@@ -51,15 +51,6 @@ public class IncomingHandlerImpl : IIncomingHandler
 
         // Add Core business services
 
-        builder.Services.AddHttpClient("dapr", options =>
-        {
-            options.BaseAddress = new Uri("http://127.0.0.1:3500");
-        }).ConfigurePrimaryHttpMessageHandler(() =>
-        {
-            // downgrade to the default HttpClientHandler used in .NET Core 2.0 and earlier.
-            return new HttpClientHandler();
-        });
-
         builder.Services.AddHttpClient();
         builder.Services.AddDaprClient(options =>
         {
@@ -72,15 +63,14 @@ public class IncomingHandlerImpl : IIncomingHandler
             // We need to tell dapr what endpoint the sidecar is listening on because we cannot read environment variables like $DAPR_HTTP_ENDPOINT.
             // https://docs.dapr.io/developing-applications/sdks/dotnet/dotnet-client/dotnet-daprclient-usage/
             options.UseHttpEndpoint("http://127.0.0.1:3500");
-            options.UseGrpcEndpoint("http://127.0.0.1:53500");
 
+            options.UseGrpcEndpoint("http://127.0.0.1:53500");
             // force the runtime to use the HTTP client handler
-            var grpcOptions = new Grpc.Net.Client.GrpcChannelOptions
+            // NOTE: this can be removed once System.Net.Sockets support is available for WASI
+            options.UseGrpcChannelOptions(new Grpc.Net.Client.GrpcChannelOptions
             {
                 HttpHandler = new HttpClientHandler()
-            };
-
-            options.UseGrpcChannelOptions(grpcOptions);
+            });
         });
         builder.Services.AddTransient<IFileDao, FileDao>();
         builder.Services.AddTransient<IComputervisionService, ComputervisionService>();
